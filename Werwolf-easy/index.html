@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Werwölfe von Düsterwald — Erzähler</title>
+  <meta name="theme-color" content="#03050a" />
+  <meta name="description" content="Düsteres, mobil-optimiertes Erzähler-Tool für Werwölfe von Düsterwald. Rollen wählen, Namen eingeben, zufällig verteilen, Session sichern und mit klarer Story-Führung spielen." />
+
+  <!-- Open-Source Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <!-- Favicon (Inline-SVG) -->
+  <link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+    <rect width="128" height="128" fill="%2303050a"/>
+    <circle cx="88" cy="40" r="30" fill="%23c7d2ff"/><circle cx="95" cy="36" r="25" fill="%2303050a"/>
+    <path d="M10 110 Q 28 70 46 110 Z M54 110 Q 72 74 90 110 Z" fill="%2310182c"/>
+  </svg>'>
+
+  <style>
+    :root{
+      --bg:#03050a; --bg-2:#070c16; --panel:#0a101b; --panel-2:#0c1322;
+      --text:#e9ecff; --muted:#9aa3c4;
+      --accent:#8892ff; --accent-2:#a06bff;
+      --ok:#52d273; --bad:#ff6b6b; --warn:#ffd166;
+      --border:#5b6983; --shadow:0 20px 50px rgba(0,0,0,.55);
+      --r:18px;
+      --box1:#0d1322; --box2:#0e1527; --box3:#0b111f;
+      --ob:#0d1322; --story:#0a101b;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:
+        radial-gradient(80vw 48vh at 70% -10%, #121a2b 0%, transparent 52%) no-repeat,
+        linear-gradient(180deg, #050812 0%, #02040a 100%);
+      text-rendering:optimizeLegibility; line-height:1.5; overflow-x:hidden;
+    }
+    .sky,.grain,.vig{position:fixed; inset:0; pointer-events:none}
+    .sky{background:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900"><circle cx="1180" cy="150" r="120" fill="%23c9d4ff" opacity=".8"/><circle cx="1210" cy="135" r="95" fill="%2303050a"/></svg>') center top/cover no-repeat; opacity:.85; animation: float 32s ease-in-out infinite alternate}
+    @keyframes float{from{transform:translateY(0)}to{transform:translateY(10px)}}
+    .grain{background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.06"/></svg>'); mix-blend-mode:soft-light; opacity:.45}
+    .vig{background:radial-gradient(140% 120% at 50% 18%, transparent 40%, rgba(0,0,0,.6) 72%, rgba(0,0,0,.88) 100%)}
+
+    h1,h2,h3{font-family:"UnifrakturCook", serif; line-height:1.15; margin:0; letter-spacing:.02em; text-wrap:balance}
+    h1{font-size:clamp(1.6rem,5.6vw,2.2rem)}
+    h2{font-size:clamp(1.4rem,4.8vw,1.8rem); color:#e6ebff}
+    h3{font-size:clamp(1.1rem,4.2vw,1.4rem)}
+    .hint{color:var(--muted); font-size:clamp(.9rem,3.6vw,.95rem)}
+    .small{font-size:clamp(.84rem,3.4vw,.9rem)}
+
+    header{position:relative; top:0; z-index:10; backdrop-filter:blur(10px); background: linear-gradient(180deg, rgba(6,9,16,.85), rgba(6,9,16,.55)); border-bottom:1px solid var(--border)}
+    .wrap{max-width:980px; margin:0 auto; padding:14px 16px}
+    .bar{display:flex; align-items:center; justify-content:space-between; gap:10px}
+    .brand{display:flex; align-items:center; gap:10px}
+    .brand svg{width:30px; height:30px; filter: drop-shadow(0 0 10px rgba(160,107,255,.35))}
+    .title{font-family:"UnifrakturCook"; font-size:clamp(1.2rem,5vw,1.6rem)}
+    .subtitle{color:var(--muted); font-size:.9rem}
+
+    button{appearance:none; border:1px solid var(--border); background:linear-gradient(180deg,#8892ff,#5b6dff); color:var(--text); padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700; transition:transform .06s ease, box-shadow .2s ease, background .2s ease; font-size:clamp(.95rem,3.8vw,1rem)}
+    button:hover{box-shadow:0 0 0 2px rgba(122,140,255,.2), 0 10px 30px rgba(0,0,0,.4)}
+    button:active{transform:translateY(1px)}
+    .btn-ghost{background:transparent}
+    .btn-accent{background:linear-gradient(180deg, #8892ff, #5b6dff); border-color:#4f60ff;margin:auto;}
+    .btn-danger{background:linear-gradient(180deg, #ff6b6b, #d94a4a); border-color:#b43b3b; color:#fff}
+    .btn-ok{background:linear-gradient(180deg, #52d273, #2ea85a); border-color:#2d8a4d; color:#03120a}
+
+    .chip{display:inline-flex; gap:8px; align-items:center; padding:6px 10px; border-radius:999px; background:#0d1423; border:1px solid var(--border); color:#c9d4ff; font-size:.86rem}
+    .status-dot{width:8px; height:8px; border-radius:50%}
+    .alive{background:var(--ok)} .dead{background:var(--bad)}
+    .pill{font-size:.86rem; padding:2px 8px; border-radius:999px; border:1px solid var(--border); background:#0d1423; color:#cfe1ff; white-space:nowrap}
+
+    main{max-width:980px; margin:12px auto 84px; padding:0 12px;}
+    section{border:1px solid var(--border); border-radius:20px; box-shadow:var(--shadow); overflow:hidden; margin:14px 0}
+    section header{background:linear-gradient(180deg, rgba(10,16,28,.9), rgba(10,16,28,.55)); border-bottom:1px solid var(--border)}
+    section .content{padding:14px 12px;}
+
+    .box1{background:linear-gradient(180deg, #0a111e, #0a111e)}
+    .box2{background:linear-gradient(180deg, #0a111e, #0a111e)}
+    .box3{background:linear-gradient(180deg, #0a111e, #0a111e)}
+    .g2{grid-template-columns:1fr;}
+    @media (min-width:900px){ .g2{grid-template-columns:1fr 1fr} }
+
+    .role-card, .player-card{background:linear-gradient(180deg,#243255,#1c2743); border:1px solid var(--border); border-radius:16px; padding:12px; display:flex; gap:10px; align-items:center; min-width:0}
+    .ic{width:38px; height:38px; display:grid; place-items:center; background:#0a111e; border:1px solid #1a2540; border-radius:12px; flex:0 0 auto}
+    .cnt{min-width:0}
+    .cnt strong{display:block; font-size:clamp(1rem,4.2vw,1.05rem); overflow-wrap:anywhere}
+    .muted{color:var(--muted)}
+    .qty{min-width:36px; text-align:center; background:#0b1120; border:1px solid var(--border); padding:6px 8px; border-radius:10px}
+    .role-qty{display:flex; gap:8px; align-items:center; justify-content:flex-end;}
+    .list{display:flex; flex-direction:column; gap:10px}
+    .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    input[type="text"]{width:100%; background:#243255; color:var(--text); border:1px solid var(--border); border-radius:12px; padding:10px 12px; outline:none; font-size:1rem;margin-top:20px;}
+    .players{display:grid; gap:10px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr))}
+    .divider{height:1px; background:linear-gradient(90deg, transparent, #1a2540, transparent); margin:14px 0}
+
+    .name-grid{display:grid; gap:12px; grid-template-columns: repeat(2, minmax(0,1fr))}
+    @media (min-width:680px){ .name-grid{grid-template-columns: repeat(3, minmax(0,1fr))} }
+    .name-tile{aspect-ratio:1/1; display:grid; place-items:center; background:linear-gradient(180deg,#243255,#1c2743); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); font-weight:800; font-size:clamp(1rem,4.6vw,1.2rem); text-align:center; padding:8px; cursor:pointer; transition:transform .06s ease, box-shadow .2s ease}
+    .name-tile:hover{box-shadow:0 0 0 2px rgba(160,107,255,.25), 0 10px 30px rgba(0,0,0,.4)}
+    .name-tile:active{transform:translateY(1px)}
+    .name-tile .sub{font-weight:600; font-size:.85em; color:var(--muted); margin-top:6px}
+
+    #game .content{padding:0}
+    .ob-wrap{padding:14px 12px; background:linear-gradient(180deg,#243255, #08101a); border-bottom:1px solid var(--border)}
+    .ob-list{display:grid; gap:8px}
+    .ob-row{display:flex; justify-content:space-between; align-items:center; background:#0b1221; border:1px solid var(--border); border-radius:12px; padding:8px 10px}
+    .story-wrap{padding:14px 12px; background:linear-gradient(180deg,#243255, #0a0f1a)}
+    .progress{height:6px; background:#0a0f1a; border:1px solid var(--border); border-radius:999px; overflow:hidden; margin-bottom:10px}
+    .progress>span{display:block; height:100%; background:linear-gradient(90deg, var(--accent), var(--accent-2)); width:0%}
+    .step-panel{background:linear-gradient(180deg,#6343a0,#a06bff); border:1px solid white; border-radius:16px; padding:12px;}
+    .step-head{display:flex; align-items:center; justify-content:space-between; gap:8px; border-bottom:1px solid white; padding-bottom:8px; margin-bottom:8px}
+    .choice-list{display:flex; flex-wrap:wrap; gap:8px}
+    .pbtn{display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:12px; border:1px solid white; background:#0b1322; font-weight:700; cursor:pointer}
+    .pbtn.active{outline:1.5px solid white; background:#0f1932}
+    .pbtn .mini{font-size:.82rem; opacity:.92}
+    #story .step-panel .hint{color:white !important;font-style: italic;font-size: 1.1rem;}
+    #openRosterInline{border:1px solid white}
+
+    .modal{position:fixed; inset:0; background:rgba(3,5,8,.7); display:none; align-items:center; justify-content:center; z-index:50}
+    .modal.show{display:flex}
+    .dialog{width:min(720px, 92vw); background:linear-gradient(180deg,#0c1220,#0a101b); border:1px solid var(--border); border-radius:22px; box-shadow:var(--shadow); padding:16px}
+    .dialog.card-full{width:100vw; height:100vh; max-width:none; border:none; border-radius:0; padding:0; background: radial-gradient(60% 40% at 50% 0%, rgba(122,140,255,.18), transparent 60%), linear-gradient(180deg,#03050a 0%, #01040a 100%); display:grid; grid-template-rows: 56px 1fr 56px}
+    .card-top,.card-bottom{display:flex; align-items:center; justify-content:space-between; padding:0 16px; backdrop-filter:blur(8px)}
+    .card-top{background:linear-gradient(180deg, rgba(9,13,20,.8), rgba(9,13,20,.3));}
+    .card-bottom{background:linear-gradient(0deg, rgba(9,13,20,.8), rgba(9,13,20,.3)); border-top:1px solid var(--border);margin-top:-30px;}
+    .card-stage{display:grid; place-items:center; position:relative}
+    .card-stage .art{width:min(560px, 85vw); height:min(560px, 85vw); background:#0b1120; border:1px solid #1a2540; border-radius:24px; display:grid; place-items:center; box-shadow:0 40px 80px rgba(0,0,0,.5), 0 0 120px rgba(160,107,255,.15) inset}
+    .role-name{position:absolute; top:100px; left:50%; transform:translateX(-50%); font-family:"UnifrakturCook"; font-size:clamp(1.8rem,6vw,2.8rem); padding:6px 12px; border-radius:10px; border:1px solid var(--border); background:rgba(10,16,28,.6)}
+
+    footer{text-align:center; color:#b7c6ff; margin:20px auto 34px; padding:8px; opacity:.9}
+    .hidden{display:none !important}
+  </style>
+</head>
+<body>
+  <div class="sky" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="vig" aria-hidden="true"></div>
+
+  <header>
+    <div class="wrap bar">
+      <div class="brand">
+        <svg viewBox="0 0 128 128" aria-hidden="true">
+          <defs><linearGradient id="lg" x1="0" x2="1"><stop offset="0" stop-color="#7a8cff"/><stop offset="1" stop-color="#a06bff"/></linearGradient></defs>
+          <circle cx="64" cy="64" r="60" fill="#03050a" stroke="url(#lg)" stroke-width="4"/>
+          <circle cx="78" cy="44" r="22" fill="#bfcaff"/><circle cx="86" cy="38" r="18" fill="#03050a"/>
+          <path d="M18 100 Q 28 72 38 100 Z M44 100 Q 54 74 64 100 Z" fill="#0f1729"/>
+        </svg>
+        <div>
+          <div class="title">Werwölfe von Düsterwald</div>
+        </div>
+      </div>
+      <span class="chip"><span class="status-dot alive"></span><span id="chip-session"></span></span>
+    </div>
+  </header>
+
+  <main>
+    <!-- SETUP -->
+    <section id="setup" class="box1">
+      <header class="wrap">
+        <h1>Spiel einrichten</h1>
+        <p class="hint">Drei Schritte: Rollen wählen, Namen hinzufügen, Karten anzeigen & dann Düsterwald betreten.</p>
+      </header>
+      <div class="content">
+        <!-- Schritt 1 -->
+        <div class="grid">
+          <div class="box1" style="border:1px solid var(--border); border-radius:16px; padding:12px">
+            <h2>1) Rollen auswählen</h2>
+            <p class="hint">Nutze +/–. Sonderrollen sind optional.</p>
+            <div class="list" id="roleList"></div>
+            <div class="divider"></div>
+            <div class="row">
+              <button id="btn-add-custom">+ Eigene Rolle hinzufügen</button>
+              <span class="hint small">Icon „?“ wird automatisch genutzt.</span>
+            </div>
+          </div>
+            <div class="divider"></div>
+          <!-- Schritt 2 -->
+          <div class="box2" style="border:1px solid var(--border); border-radius:16px; padding:12px">
+            <h2>2) Spielende hinzufügen</h2>
+            <div class="row">
+              <input id="nameInput" type="text" placeholder="Name eingeben und Enter…">
+              <button id="btn-add-name">Hinzufügen</button>
+            </div>
+            <p class="hint">Spielende: <span class="pill" id="playerCount">0</span> · Rollen gesamt: <span class="pill" id="roleCount">0</span></p>
+            <div class="players" id="playerList"></div>
+            <div class="divider"></div>
+            <div class="row" style="gap:10px">
+              <button id="btn-assign" class="btn-accent" disabled>Rollen zufällig verteilen</button>
+              <span class="muted small">Anzahl Rollen = Anzahl Spielende</span>
+              <span class="pill" id="assignStatus">Noch nicht verteilt</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Schritt 3 -->
+        <div class="box3" style="border:1px solid var(--border); border-radius:16px; padding:12px">
+          <h2>3) Karten anzeigen</h2>
+          <p class="hint">Tippe auf eine <strong>Namenskarte</strong>, um die Rolle im Vollbild zu zeigen.</p>
+          <div id="nameTiles" class="name-grid"></div>
+
+          <div class="divider"></div>
+          <div class="row" style="justify-content:flex-end">
+            <button id="btn-enter" class="btn-accent">Düsterwald betreten</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME -->
+    <section id="game" class="hidden">
+      <header class="wrap">
+        <h1>Spielleitung</h1>
+      </header>
+
+      <div class="content">
+        <!-- Überblick -->
+        <div class="ob-wrap">
+          <h2>Überblick</h2>
+          <div class="ob-list" style="margin-top:8px">
+            <div class="ob-row"><span>Phase</span><strong id="phaseLabel">—</strong></div>
+            <div class="ob-row"><span>Runde</span><strong id="roundLabel">1</strong></div>
+            <div class="ob-row"><span>Hauptmann</span><strong id="captainLabel">—</strong></div>
+            <div class="ob-row"><span>Lebend</span><strong id="aliveLabel">0</strong></div>
+            <div class="ob-row"><span>Wölfe</span><strong id="wolvesLabel">0</strong></div>
+            <div class="row" style="margin-top:6px">
+              <button id="btn-open-roster" class="btn-ghost">Tafel: Rollen & Status</button>
+              <button id="btn-open-history" class="btn-ghost">Chronik</button>
+              <button id="btn-leave" class="btn-danger">Düsterwald verlassen</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Story -->
+        <div class="story-wrap">
+          <h2>Story</h2>
+          <p class="hint">Führe Schritt für Schritt durch die Nacht & den Tag.</p>
+          <div class="progress"><span id="prog" style="width:0%"></span></div>
+          <div id="story"></div>
+          <div class="row" style="margin-top:10px; justify-content:space-between">
+            <button id="btn-prev" class="btn-ghost">◀︎ Zurück</button>
+            <div class="row">
+              <button id="btn-day" class="btn-ghost">➜ Tag beginnen</button>
+              <button id="btn-next" class="btn-ok">Weiter ▶︎</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div>Werwölfe von Düsterwald - with ♡ by Mediakreation</div>
+    </footer>
+  </main>
+
+  <!-- Victory Modal -->
+  <div class="modal" id="modalWin" role="dialog" aria-modal="true">
+    <div class="dialog">
+      <div class="row" style="justify-content:space-between; margin-bottom:8px">
+        <h3 id="winTitle">Sieg!</h3>
+        <button class="btn-ghost" id="winClose">Schließen ✕</button>
+      </div>
+      <div id="winBody" class="hint" style="margin-bottom:12px">—</div>
+      <div class="row" style="justify-content:flex-end">
+        <button class="btn-danger" id="winToSetup">Zurück zum Setup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SVG-Icons -->
+  <svg width="0" height="0" style="position:absolute; visibility:hidden" aria-hidden="true">
+    <symbol id="ic-wolf" viewBox="0 0 64 64"><path fill="#cbd4ff" d="M12 50q6-6 8-16l-6-8 10 4 6-6 10 2 4-4 4 8-6 6 4 8-8 4H18z"/><circle cx="40" cy="26" r="2" fill="#03050a"/></symbol>
+    <symbol id="ic-villager" viewBox="0 0 64 64"><rect x="10" y="28" width="44" height="24" rx="3" fill="#cbd4ff"/><polygon points="32,10 8,28 56,28" fill="#9fb0ff"/><rect x="28" y="38" width="8" height="14" fill="#03050a"/></symbol>
+    <symbol id="ic-seer" viewBox="0 0 64 64"><circle cx="32" cy="28" r="12" fill="#9fb0ff"/><rect x="26" y="40" width="12" height="6" rx="2" fill="#cbd4ff"/><rect x="24" y="46" width="16" height="4" rx="2" fill="#cbd4ff"/></symbol>
+    <symbol id="ic-witch" viewBox="0 0 64 64"><path d="M12 40h40v6H12z" fill="#cbd4ff"/><path d="M20 38l12-18 12 18z" fill="#9fb0ff"/><rect x="29" y="16" width="6" height="8" rx="2" fill="#cbd4ff"/></symbol>
+    <symbol id="ic-hunter" viewBox="0 0 64 64"><circle cx="32" cy="32" r="18" fill="#cbd4ff"/><circle cx="32" cy="32" r="4" fill="#03050a"/><rect x="30" y="8" width="4" height="12" fill="#cbd4ff"/><rect x="30" y="44" width="4" height="12" fill="#cbd4ff"/><rect x="8" y="30" width="12" height="4" fill="#cbd4ff"/><rect x="44" y="30" width="12" height="4" fill="#cbd4ff"/></symbol>
+    <symbol id="ic-heart" viewBox="0 0 64 64"><path fill="#ff9bb0" d="M32 54S8 38 8 24a10 10 0 0120 0 10 10 0 0120 0c0 14-24 30-24 30z"/></symbol>
+    <symbol id="ic-captain" viewBox="0 0 64 64"><polygon points="12,22 52,22 32,46" fill="#ffd166"/><rect x="28" y="46" width="8" height="8" fill="#ffd166"/></symbol>
+    <symbol id="ic-skull" viewBox="0 0 64 64"><circle cx="32" cy="28" r="16" fill="#ff6b6b"/><circle cx="26" cy="26" r="3" fill="#03050a"/><circle cx="38" cy="26" r="3" fill="#03050a"/><rect x="30" y="32" width="4" height="8" rx="1" fill="#03050a"/></symbol>
+    <symbol id="ic-thief" viewBox="0 0 64 64"><rect x="10" y="20" width="44" height="28" rx="4" fill="#b8c2ff"/><rect x="10" y="28" width="44" height="8" fill="#2b3558"/><circle cx="24" cy="32" r="3" fill="#03050a"/><circle cx="40" cy="32" r="3" fill="#03050a"/></symbol>
+    <symbol id="ic-girl" viewBox="0 0 64 64"><circle cx="32" cy="26" r="10" fill="#cbd4ff"/><rect x="18" y="38" width="28" height="12" rx="6" fill="#9fb0ff"/><circle cx="28" cy="26" r="2" fill="#03050a"/><circle cx="36" cy="26" r="2" fill="#03050a"/><path d="M22 24 q10 -10 20 0" stroke="#03050a" stroke-width="2" fill="none" opacity=".5"/></symbol>
+    <symbol id="ic-harlot" viewBox="0 0 64 64"><path d="M18 44 q14 -12 28 0 q-14 16 -28 0z" fill="#ff97c2"/><circle cx="32" cy="26" r="10" fill="#cbd4ff"/><rect x="28" y="16" width="8" height="6" rx="2" fill="#ff97c2"/></symbol>
+    <symbol id="ic-guard" viewBox="0 0 64 64"><rect x="14" y="20" width="36" height="28" rx="4" fill="#9fb0ff"/><path d="M18 24h28v8L32 40 18 32z" fill="#cbd4ff"/><rect x="30" y="44" width="4" height="6" fill="#9fb0ff"/></symbol>
+    <symbol id="ic-unknown" viewBox="0 0 64 64"><rect x="8" y="8" width="48" height="48" rx="12" fill="#b8c2ff"/><text x="32" y="38" font-size="28" text-anchor="middle" fill="#03050a" font-family="ui-sans-serif,system-ui">?</text></symbol>
+  </svg>
+
+  <!-- Card & Roster & History Modals -->
+  <div class="modal" id="modalCard" role="dialog" aria-modal="true">
+    <div class="dialog card-full">
+      <div class="card-top"><span></span></div>
+      <div class="card-stage" id="cardStage"></div>
+      <div class="card-bottom"><div class="hint small">Zum Schließen tippen oder Esc</div><button class="btn-danger" id="cardClose">Schließen ✕</button></div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalRoster" role="dialog" aria-modal="true">
+    <div class="dialog">
+      <div class="row" style="justify-content:space-between; margin-bottom:8px">
+        <h3>Tafel — Rollen & Status</h3>
+        <button class="btn-ghost" id="rosterClose">Schließen ✕</button>
+      </div>
+      <div id="rosterBody"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalHistory" role="dialog" aria-modal="true">
+    <div class="dialog">
+      <div class="row" style="justify-content:space-between; margin-bottom:8px">
+        <h3>Chronik</h3>
+        <button class="btn-ghost" id="historyClose">Schließen ✕</button>
+      </div>
+      <div id="historyBody"></div>
+    </div>
+  </div>
+
+  <script>
+  /* ---------- Daten ---------- */
+  const STORAGE_KEY="dus-terwald-v5";
+  const DEFAULT_ROLES=[
+    {id:"Dorfbewohner", icon:"ic-villager", desc:"Keine Fähigkeit.", qty:0, team:"dorf"},
+    {id:"Werwolf", icon:"ic-wolf", desc:"Frisst nachts.", qty:0, team:"wolf"},
+    {id:"Seherin", icon:"ic-seer", desc:"Schaut nachts eine Rolle an.", qty:0, team:"dorf"},
+    {id:"Hexe", icon:"ic-witch", desc:"Retten/vergiften (Hausregeln).", qty:0, team:"dorf"},
+    {id:"Jäger", icon:"ic-hunter", desc:"Reißt beim Tod jemanden mit.", qty:0, team:"dorf"},
+    {id:"Amor", icon:"ic-heart", desc:"Verkuppelt zwei Liebende (erste Nacht).", qty:0, team:"neutral"},
+    {id:"Dieb/Diebin", icon:"ic-thief", desc:"Variante: darf Rolle tauschen.", qty:0, team:"neutral"},
+    {id:"Mädchen", icon:"ic-girl", desc:"Darf bei den Wölfen blinzeln.", qty:0, team:"dorf"},
+    {id:"Hure", icon:"ic-harlot", desc:"Besucht nachts jemanden (Hausregeln).", qty:0, team:"neutral"},
+    {id:"Leibwächter", icon:"ic-guard", desc:"Schützt nachts eine Person.", qty:0, team:"dorf"},
+  ];
+  let state={inSession:false,phase:"setup",round:1,players:[],roles:[...DEFAULT_ROLES.map(r=>({...r}))],assigned:false,captainId:null,history:[],pending:{nightVictim:null,witchSaved:false,witchKill:null,dayLynch:null,seerPeek:null},stepIndex:0};
+
+  /* ---------- Utils ---------- */
+  const uid=()=>Math.random().toString(36).slice(2,9);
+  const save=()=>localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  const load=()=>{try{const raw=localStorage.getItem(STORAGE_KEY); if(raw){state=Object.assign({}, state, JSON.parse(raw));}}catch(e){}};
+  const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+  const countRolesTotal=()=>state.roles.reduce((n,r)=>n+(r.qty||0),0);
+  const roleInfo=id=>state.roles.find(r=>r.id===id)||{id,icon:"ic-unknown",desc:""};
+  const alivePlayers=()=>state.players.filter(p=>p.alive!==false);
+  const aliveByRole=id=>state.players.filter(p=>p.alive!==false&&p.roleId===id);
+  const wolvesAlive=()=>aliveByRole("Werwolf").length;
+  const isRoleAlive=id=>aliveByRole(id).length>0;
+  const nameById=id=>state.players.find(p=>p.id===id)?.name||"—";
+  const getPath=path=>path.split(".").reduce((a,k)=>a?.[k], state);
+  const setPath=(path,val)=>{const parts=path.split("."); let cur=state; for(let i=0;i<parts.length-1;i++){cur=cur[parts[i]]=(cur[parts[i]]??{});} cur[parts.at(-1)]=val;};
+  const counts=()=>{const wolves=wolvesAlive(); const alive=alivePlayers().length; const dorf=alive-wolves; return {wolves,dorf,alive};}
+  const checkWin=()=>{const {wolves,dorf,alive}=counts(); if(alive<=0) return null; if(wolves===0) return "dorf"; if(wolves>=dorf) return "wolf"; return null;}
+
+  /* ---------- Setup Render ---------- */
+  const elRoleList=document.getElementById("roleList");
+  const elPlayerList=document.getElementById("playerList");
+  const elPlayerCount=document.getElementById("playerCount");
+  const elRoleCount=document.getElementById("roleCount");
+  const elAssignStatus=document.getElementById("assignStatus");
+  const elBtnAssign=document.getElementById("btn-assign");
+  const elBtnAddName=document.getElementById("btn-add-name");
+  const elNameInput=document.getElementById("nameInput");
+  const elNameTiles=document.getElementById("nameTiles");
+
+  function renderRoles(){
+    elRoleList.innerHTML="";
+    state.roles.forEach((r,i)=>{
+      const wrap=document.createElement("div");
+      wrap.className="role-card";
+      wrap.innerHTML=`
+        <div class="ic"><svg viewBox="0 0 64 64"><use href="#${r.icon}"></use></svg></div>
+        <div class="cnt">
+          <div class="row" style="justify-content:space-between">
+            <strong>${r.id}</strong><span class="muted small">${r.team==='wolf'?'Team Wolf':r.team==='dorf'?'Team Dorf':'Neutral'}</span>
+          </div>
+          <div class="muted small">${r.desc}</div>
+        </div>
+        <div class="role-qty">
+          <button class="btn-ghost" data-i="${i}" data-act="minus">–</button>
+          <div class="qty">${r.qty||0}</div>
+          <button class="btn-ghost" data-i="${i}" data-act="plus">+</button>
+          ${!DEFAULT_ROLES.find(dr=>dr.id===r.id)?`<button class="btn-ghost" data-i="${i}" data-act="del">✕</button>`:""}
+        </div>`;
+      elRoleList.appendChild(wrap);
+    });
+    elRoleList.querySelectorAll("button[data-act]").forEach(b=>{
+      b.onclick=()=>{const i=+b.dataset.i, act=b.dataset.act;
+        if(act==="plus") state.roles[i].qty=(state.roles[i].qty||0)+1;
+        if(act==="minus") state.roles[i].qty=Math.max(0,(state.roles[i].qty||0)-1);
+        if(act==="del") state.roles.splice(i,1);
+        save(); renderRoles(); renderCounts(); syncAssignBtn();
+      };
+    });
+  }
+  function renderPlayers(){
+    elPlayerList.innerHTML="";
+    state.players.forEach(p=>{
+      const card=document.createElement("div");
+      card.className="player-card";
+      card.innerHTML=`
+        <div class="ic"><svg viewBox="0 0 64 64"><use href="#ic-villager"></use></svg></div>
+        <div class="cnt"><strong>${p.name}</strong><div class="muted small">${p.alive===false?'<span class="pill">Tot</span>':'<span class="pill">Lebt</span>'}</div></div>
+        <button class="btn-ghost" data-id="${p.id}" data-act="del">✕</button>`;
+      elPlayerList.appendChild(card);
+    });
+    elPlayerList.querySelectorAll("button[data-act='del']").forEach(b=>{
+      b.onclick=()=>{const i=state.players.findIndex(p=>p.id===b.dataset.id); if(i>=0){state.players.splice(i,1); save(); renderPlayers(); renderCounts(); syncAssignBtn(); renderNameTiles();}};
+    });
+  }
+  function renderNameTiles(){
+    elNameTiles.innerHTML="";
+    state.players.forEach(p=>{
+      const tile=document.createElement("button");
+      tile.className="name-tile";
+      tile.innerHTML=`<div>${p.name}</div><div class="sub">${p.roleId?'Tippen: Karte':'Keine Rolle'}</div>`;
+      tile.onclick=()=>showCard(p.id);
+      elNameTiles.appendChild(tile);
+    });
+  }
+  function renderCounts(){ elPlayerCount.textContent=state.players.length; elRoleCount.textContent=countRolesTotal(); }
+  function syncAssignBtn(){
+    const ok=state.players.length>0 && countRolesTotal()===state.players.length;
+    elBtnAssign.disabled=!ok; elAssignStatus.textContent=state.assigned?"Verteilt":(ok?"Bereit":"Noch nicht bereit");
+  }
+
+  elBtnAddName.onclick=addName;
+  elNameInput.addEventListener("keydown",e=>{if(e.key==="Enter") addName();});
+  function addName(){
+    const v=elNameInput.value.trim(); if(!v) return;
+    if(state.players.some(p=>p.name.toLowerCase()===v.toLowerCase())){alert("Name bereits vorhanden."); return;}
+    state.players.push({id:uid(), name:v, alive:true}); elNameInput.value=""; save();
+    renderPlayers(); renderCounts(); syncAssignBtn(); renderNameTiles();
+  }
+  document.getElementById("btn-add-custom").onclick=()=>{
+    const id=prompt("Name der Rolle:"); if(!id) return;
+    if(state.roles.some(r=>r.id.toLowerCase()===id.toLowerCase())){alert("Diese Rolle existiert bereits."); return;}
+    state.roles.push({id, icon:"ic-unknown", desc:"Eigene Rolle (freie Beschreibung).", qty:1, team:"neutral"});
+    save(); renderRoles(); renderCounts(); syncAssignBtn();
+  };
+  elBtnAssign.onclick=()=>{
+    if(countRolesTotal()!==state.players.length){alert("Anzahl Rollen muss Anzahl Spielende entsprechen."); return;}
+    const deck=[]; state.roles.forEach(r=>{for(let i=0;i<(r.qty||0);i++) deck.push(r.id);});
+    shuffle(deck); state.players.forEach((p,i)=>{p.roleId=deck[i]; p.alive=true; delete p.deadRound;});
+    state.assigned=true; save(); renderPlayers(); renderCounts(); syncAssignBtn(); renderNameTiles();
+    toast("Rollen wurden zufällig verteilt.");
+  };
+
+  /* ---------- Karten-Modal ---------- */
+  const modalCard=document.getElementById("modalCard");
+  const cardStage=document.getElementById("cardStage");
+  function roleArtwork(roleId){const r=roleInfo(roleId); const icon=r.icon||"ic-unknown"; return `<div class="art"><svg viewBox="0 0 64 64" style="width:75%;height:75%"><use href="#${icon}"></use></svg></div>`;}
+  function showCard(playerId){const p=state.players.find(x=>x.id===playerId); if(!p||!p.roleId){alert("Keine Rolle zugewiesen."); return;} const r=roleInfo(p.roleId); cardStage.innerHTML=`<div class="role-name">${r.id}</div>${roleArtwork(r.id)}`; modalCard.classList.add("show");}
+  document.getElementById("cardClose").onclick=()=>modalCard.classList.remove("show");
+  modalCard.addEventListener("click",e=>{if(e.target===modalCard) modalCard.classList.remove("show");});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape") modalCard.classList.remove("show");});
+
+  /* ---------- Session & Game ---------- */
+  const chipSession=document.getElementById("chip-session");
+  const btnEnter=document.getElementById("btn-enter");
+  const btnLeave=document.getElementById("btn-leave");
+  const sectionSetup=document.getElementById("setup");
+  const sectionGame=document.getElementById("game");
+  const phaseLabel=document.getElementById("phaseLabel");
+  const roundLabel=document.getElementById("roundLabel");
+  const captainLabel=document.getElementById("captainLabel");
+  const aliveLabel=document.getElementById("aliveLabel");
+  const wolvesLabel=document.getElementById("wolvesLabel");
+  const storyWrap=document.getElementById("story");
+  const progBar=document.getElementById("prog");
+  const btnPrev=document.getElementById("btn-prev");
+  const btnNext=document.getElementById("btn-next");
+  const btnDay=document.getElementById("btn-day");
+
+  btnEnter.onclick=()=>{
+    if(!state.assigned){alert("Bitte zuerst Rollen verteilen."); return;}
+    state.inSession=true; state.phase="nacht"; state.round=state.round||1; state.stepIndex=0; save(); renderAll(); toast("Du hast Düsterwald betreten.");
+  };
+  btnLeave.onclick=()=>{if(confirm("Düsterwald verlassen?")){state.inSession=false; state.phase="setup"; save(); renderAll();}};
+  window.addEventListener("beforeunload",e=>{ if(state.inSession){e.preventDefault(); e.returnValue="";} });
+  function renderHeaderSession(){chipSession.textContent=state.inSession?"In Session":"Setup";}
+  function renderGameTop(){phaseLabel.textContent=state.phase==="nacht"?"Nacht":state.phase==="tag"?"Tag":"—"; roundLabel.textContent=String(state.round); captainLabel.textContent=(state.captainId? (state.players.find(p=>p.id===state.captainId)?.name || "—") : "—"); aliveLabel.textContent=String(alivePlayers().length); wolvesLabel.textContent=String(wolvesAlive());}
+
+  /* Story controls */
+  function ctlPickPerson({label, path, required=false, predicate=null, allowShowCard=false, allowNone=true}){
+    const el=document.createElement("div");
+    const list=alivePlayers().filter(p=> predicate? predicate(p): true);
+    const selected=getPath(path);
+    el.innerHTML=`<p class="hint"><strong>${label}</strong> ${allowShowCard?'<span class="small muted">· 👁 Karte jederzeit zeigen</span>':''}</p>
+      <div class="choice-list">
+        ${list.map(p=>`<div class="pbtn ${selected===p.id?'active':''}" data-id="${p.id}"><span>${p.name}</span>${allowShowCard?`<span class="mini">· <button class="btn-ghost small" data-show="${p.id}">👁 Karte</button></span>`:''}</div>`).join("")}
+        ${allowNone?`<div class="pbtn ${!selected?'active':''}" data-id="">— keiner —</div>`:""}
+      </div>`;
+    el.querySelectorAll(".pbtn[data-id]").forEach(b=>b.addEventListener("click",()=>{const id=b.dataset.id||null; if(required && !id) return; setPath(path,id); save(); renderStory();}));
+    el.querySelectorAll("button[data-show]").forEach(btn=>btn.addEventListener("click",(ev)=>{ev.stopPropagation(); showCard(btn.dataset.show);})); return el;
+  }
+  function ctlToggle(label, path){const id=uid(); const el=document.createElement("div"); el.innerHTML=`<label class="row" for="${id}"><input id="${id}" type="checkbox"> ${label}</label>`; const input=el.querySelector("input"); input.checked=getPath(path)===true; input.onchange=()=>{setPath(path,input.checked); save();}; return el;}
+  function ctlInfo(text){ const el=document.createElement("div"); el.className="hint"; el.textContent=text; return el; }
+  function ctlApplyNight(){
+    const el=document.createElement("div"); const {nightVictim,witchSaved,witchKill}=state.pending;
+    const texts=[]; if(nightVictim && !witchSaved) texts.push(`Nachtopfer: ${nameById(nightVictim)}`); if(nightVictim && witchSaved) texts.push(`Opfer gerettet: ${nameById(nightVictim)}`); if(witchKill) texts.push(`Hexe vergiftet: ${nameById(witchKill)}`);
+    el.innerHTML=`<div class="row"><span class="hint small">Überblick: ${texts.join(" · ")||"—"}</span><button class="btn-ok" id="applyNight">Nacht anwenden</button></div>`;
+    el.querySelector("#applyNight").onclick=()=>{
+      const deaths=[]; if(state.pending.nightVictim && !state.pending.witchSaved) deaths.push(state.pending.nightVictim); if(state.pending.witchKill) deaths.push(state.pending.witchKill);
+      [...new Set(deaths)].forEach(id=>killPlayer(id,"Nacht"));
+      state.pending={nightVictim:null,witchSaved:false,witchKill:null,dayLynch:null,seerPeek:null};
+      const winner=checkWin(); // prüfen nach der Nacht
+      state.phase="tag"; state.stepIndex=0; save(); renderAll();
+      if(winner) showWin(winner);
+    };
+    return el;
+  }
+  function ctlListDeaths(){const el=document.createElement("div"); const deadNow=state.players.filter(p=>p.alive===false && p.deadRound===state.round); el.innerHTML=`<div class="hint"><strong>Gestorben:</strong> ${deadNow.length?deadNow.map(p=>p.name).join(", "):"niemand"}</div>`; return el;}
+  function ctlApplyDay(){
+    const el=document.createElement("div");
+    el.innerHTML=`<div class="row"><button class="btn-ok" id="applyDay">Tag beenden & Nacht starten</button></div>`;
+    el.querySelector("#applyDay").onclick=()=>{
+      if(state.pending.dayLynch){ killPlayer(state.pending.dayLynch,"Tag"); state.pending.dayLynch=null; }
+      const winner=checkWin(); // prüfen nach dem Tag
+      if(winner){ save(); renderAll(); showWin(winner); return; }
+      state.phase="nacht"; state.round+=1; state.stepIndex=0; save(); renderAll();
+    };
+    return el;
+  }
+  function killPlayer(id,when){
+    const p=state.players.find(x=>x.id===id); if(!p||p.alive===false) return;
+    p.alive=false; p.deadRound=state.round;
+    state.history.push({round:state.round, phase:(state.phase||"setup"), text:`${p.name} ist am ${when} gestorben.`, at:Date.now()});
+    if(state.captainId===p.id){ state.captainId=null; state.history.push({round:state.round, phase:"tag", text:`Hauptmann ist gestorben. Wählt neu.`, at:Date.now()}); }
+  }
+
+  function buildSteps(){
+    const steps=[];
+    if(state.phase==="nacht"){
+      if(isRoleAlive("Amor") && state.round===1){ steps.push({icon:"ic-heart", title:"Amor (1. Nacht)", text:"Wählt zwei Liebende.", controls:[ctlInfo("Merkt privat, wer Liebende sind.")]}); }
+      if(isRoleAlive("Werwolf")){
+        steps.push({icon:"ic-wolf", title:"Werwölfe erwachen", text:"Die Wölfe wählen ein Opfer (nur Dorfbewohner & Sonderrollen).", controls:[
+          // ✨ Nur Nicht-Werwölfe anzeigen:
+          ctlPickPerson({label:"Nacht-Opfer auswählen", path:"pending.nightVictim", required:true, predicate:(p)=>p.roleId!=="Werwolf"})
+        ]});
+      }
+      if(isRoleAlive("Mädchen")){ steps.push({icon:"ic-girl", title:"Mädchen blinzelt", text:"Darf vorsichtig spicken.", controls:[ctlInfo("Erzähler achtet auf Ruhe.")]}); }
+      if(isRoleAlive("Seherin")){ steps.push({icon:"ic-seer", title:"Seherin schaut", text:"Seherin zeigt auf eine Person – Karte kann sofort angezeigt werden.", controls:[
+        ctlPickPerson({label:"Person auswählen", path:"pending.seerPeek", allowShowCard:true})
+      ]}); }
+      if(isRoleAlive("Leibwächter")){ steps.push({icon:"ic-guard", title:"Leibwächter schützt", text:"Wählt eine Person, die geschützt ist.", controls:[ctlInfo("Hausregel: nicht 2x hintereinander dieselbe Person.")]}); }
+      if(isRoleAlive("Hexe")){ steps.push({icon:"ic-witch", title:"Hexe entscheidet", text:"Hexe erfährt das Opfer; darf retten oder vergiften.", controls:[
+        ctlToggle("Hexe rettet das Opfer", "pending.witchSaved"),
+        ctlPickPerson({label:"Hexe vergiftet (optional)", path:"pending.witchKill", predicate:(p)=>p.id!==state.pending.nightVictim, allowShowCard:true})
+      ]}); }
+      if(isRoleAlive("Hure")){ steps.push({icon:"ic-harlot", title:"Hure wandert", text:"Besucht (optional) jemanden.", controls:[ctlInfo("Optionale Regel: Besuch schützt, birgt Risiko.")]}); }
+      if(isRoleAlive("Dieb/Diebin") && state.round===1){ steps.push({icon:"ic-thief", title:"Dieb/Diebin (Variante)", text:"Darf ggf. Rolle tauschen (manuell).", controls:[ctlInfo("Tool verwaltet den Tausch nicht automatisch.")]}); }
+      steps.push({icon:"ic-villager", title:"Morgengrauen", text:"Ereignisse anwenden und zum Tag wechseln.", controls:[ctlApplyNight()]});
+    }else{
+      steps.push({icon:"ic-villager", title:"Tag bricht an", text:"Verkünde die Ereignisse der Nacht.", controls:[ctlListDeaths()]});
+      if(!state.captainId){ steps.push({icon:"ic-captain", title:"Hauptmann wählen", text:"Wählt demokratisch eine Person.", controls:[
+        ctlPickPerson({label:"Hauptmann setzen", path:"captainId", required:true})
+      ]}); }
+      steps.push({icon:"ic-villager", title:"Diskussion", text:"Diskutiert – dann Abstimmung.", controls:[ctlInfo("Tipp: Timer 3–5 Minuten.")]});
+      steps.push({icon:"ic-villager", title:"Abstimmung & Lynch", text:"Bei Gleichstand entscheidet (optional) die Stimme des Hauptmanns.", controls:[
+        ctlPickPerson({label:"Lynch-Opfer (optional)", path:"pending.dayLynch", allowShowCard:true}),
+        ctlApplyDay()
+      ]});
+    }
+    return steps;
+  }
+
+  function renderStory(){
+    const steps=buildSteps();
+    const i=Math.min(state.stepIndex, steps.length-1);
+    const step=steps[i]; const pct=steps.length? (i/(steps.length-1))*100 : 0;
+    progBar.style.width=(steps.length>1?pct:0)+"%";
+    if(!step){ storyWrap.innerHTML=`<div class="hint">Keine Schritte verfügbar.</div>`; return; }
+    storyWrap.innerHTML=`
+      <div class="step-panel">
+        <div class="step-head">
+          <div class="row"><svg width="22" height="22" viewBox="0 0 64 64"><use href="#${step.icon}"></use></svg><h3>${step.title}</h3></div>
+          <button class="btn-ghost" id="openRosterInline">Tafel öffnen</button>
+        </div>
+        <p class="hint">${step.text}</p>
+        <div id="controls"></div>
+      </div>`;
+    document.getElementById("openRosterInline").onclick=()=>{renderRoster(); modalRoster.classList.add("show");};
+    const controls=document.getElementById("controls"); step.controls.forEach(c=>controls.appendChild(c));
+    btnPrev.disabled=(i===0); btnNext.disabled=(i>=steps.length-1); btnDay.classList.toggle("hidden", state.phase!=="nacht" || i<steps.length-1);
+  }
+  btnPrev.onclick=()=>{state.stepIndex=Math.max(0,state.stepIndex-1); save(); renderStory();};
+  btnNext.onclick=()=>{state.stepIndex+=1; save(); renderStory();};
+  btnDay.onclick=()=>{state.phase="tag"; state.stepIndex=0; save(); renderAll();};
+
+  /* ---------- Roster & History ---------- */
+  const modalRoster=document.getElementById("modalRoster"); const rosterBody=document.getElementById("rosterBody");
+  document.getElementById("rosterClose").onclick=()=>modalRoster.classList.remove("show");
+  modalRoster.addEventListener("click",e=>{if(e.target===modalRoster) modalRoster.classList.remove("show");});
+  document.getElementById("btn-open-roster").onclick=()=>{renderRoster(); modalRoster.classList.add("show");};
+  function renderRoster(){
+    const alive=alivePlayers(), dead=state.players.filter(p=>p.alive===false);
+    rosterBody.innerHTML=`
+      <div class="list">
+        <h3>Lebende (${alive.length})</h3>
+        <div class="players">
+          ${alive.map(p=>{const r=roleInfo(p.roleId); return `<div class="player-card"><div class="ic"><svg viewBox="0 0 64 64"><use href="#${r.icon}"></use></svg></div><div class="cnt"><strong>${p.name}</strong><div class="muted small">${r.id}</div></div><div class="row"><button class="btn-ghost" data-act="show" data-id="${p.id}">Karte</button><button class="btn-ghost" data-act="kill" data-id="${p.id}">✝</button></div></div>`; }).join("")}
+        </div>
+        <div class="divider"></div>
+        <h3>Tote (${dead.length})</h3>
+        <div class="players">
+          ${dead.map(p=>{const r=roleInfo(p.roleId); return `<div class="player-card"><div class="ic"><svg viewBox="0 0 64 64"><use href="#ic-skull"></use></svg></div><div class="cnt"><strong>${p.name}</strong><div class="muted small">${r.id} — Runde ${p.deadRound||"?"}</div></div><button class="btn-ghost" data-act="revive" data-id="${p.id}">↺</button></div>`; }).join("") || `<div class="hint">Niemand ist tot.</div>`}
+        </div>
+      </div>`;
+    rosterBody.querySelectorAll("button[data-act='show']").forEach(b=>b.onclick=()=>showCard(b.dataset.id));
+    rosterBody.querySelectorAll("button[data-act='kill']").forEach(b=>b.onclick=()=>{if(confirm("Diese Person als tot markieren?")){killPlayer(b.dataset.id, state.phase==="nacht"?"Nacht":"Tag"); save(); renderRoster(); renderGameTop();}});
+    rosterBody.querySelectorAll("button[data-act='revive']").forEach(b=>b.onclick=()=>{const p=state.players.find(x=>x.id===b.dataset.id); if(!p) return; p.alive=true; delete p.deadRound; save(); renderRoster(); renderGameTop();});
+  }
+  const modalHistory=document.getElementById("modalHistory"); const historyBody=document.getElementById("historyBody");
+  document.getElementById("historyClose").onclick=()=>modalHistory.classList.remove("show");
+  modalHistory.addEventListener("click",e=>{if(e.target===modalHistory) modalHistory.classList.remove("show");});
+  document.getElementById("btn-open-history").onclick=()=>{renderHistory(); modalHistory.classList.add("show");};
+  function renderHistory(){ if(!state.history.length){historyBody.innerHTML=`<div class="hint">Noch keine Einträge.</div>`; return;} historyBody.innerHTML=state.history.slice().reverse().map(h=>`<div class="role-card"><div class="ic"><svg viewBox="0 0 64 64"><use href="#${h.phase==='nacht'?'ic-wolf':'ic-villager'}"></use></svg></div><div class="cnt"><strong>Runde ${h.round} — ${h.phase==='nacht'?'Nacht':'Tag'}</strong><div class="muted small">${new Date(h.at).toLocaleString()}</div><div>${h.text}</div></div></div>`).join(""); }
+
+  /* ---------- Sieg Anzeige ---------- */
+  const modalWin=document.getElementById("modalWin");
+  const winTitle=document.getElementById("winTitle");
+  const winBody=document.getElementById("winBody");
+  document.getElementById("winClose").onclick=()=>modalWin.classList.remove("show");
+  document.getElementById("winToSetup").onclick=()=>{state.inSession=false; state.phase="setup"; save(); modalWin.classList.remove("show"); renderAll();};
+  function showWin(winner){
+    if(winner==="dorf"){ winTitle.textContent="Sieg des Dorfes!"; winBody.textContent="Alle Werwölfe sind tot. Das Dorf atmet auf."; }
+    else if(winner==="wolf"){ winTitle.textContent="Sieg der Werwölfe!"; winBody.textContent="Die Wölfe sind in der Überzahl und reißen das Dorf an sich."; }
+    else { return; }
+    modalWin.classList.add("show");
+  }
+
+  /* ---------- Render All ---------- */
+  function renderAll(){
+    renderHeaderSession();
+    if(state.phase==="setup"){sectionSetup.classList.remove("hidden"); sectionGame.classList.add("hidden");}
+    else{sectionSetup.classList.add("hidden"); sectionGame.classList.remove("hidden");}
+    renderRoles(); renderPlayers(); renderCounts(); syncAssignBtn(); renderNameTiles();
+    renderGameTop(); renderStory();
+  }
+
+  /* ---------- Toast ---------- */
+  function toast(msg){const t=document.createElement("div"); t.textContent=msg; Object.assign(t.style,{position:"fixed",bottom:"22px",left:"50%",transform:"translateX(-50%)",background:"linear-gradient(180deg,#0e1526,#0a111f)",border:"1px solid var(--border)",padding:"10px 14px",borderRadius:"12px",boxShadow:"var(--shadow)",zIndex:60}); document.body.appendChild(t); setTimeout(()=>t.remove(),2200);}
+
+  /* ---------- Boot + PWA ---------- */
+  load(); renderAll();
+  document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){e.preventDefault(); toast("Dein Fortschritt wird automatisch lokal gespeichert.");}});
+
+  (function setupPWA(){
+    if(!('serviceWorker' in navigator)) return;
+    const swCode = `
+      const CACHE='dus-cache-v5';
+      self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll([])).then(()=>self.skipWaiting())));
+      self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+      self.addEventListener('message',async e=>{const m=e.data||{}; if(m.type==='CACHE_URLS'){const c=await caches.open(CACHE); await c.addAll(m.payload||[]);}});
+      self.addEventListener('fetch',e=>e.respondWith((async()=>{const c=await caches.open(CACHE); const hit=await c.match(e.request); if(hit) return hit; try{const r=await fetch(e.request); if(e.request.method==='GET'&&r.ok) c.put(e.request,r.clone()); return r;}catch(err){return hit||Response.error();}})()));
+    `;
+    const blob=new Blob([swCode],{type:"text/javascript"}); const swUrl=URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl,{scope:"./"}).then(async reg=>{
+      const iconSvg=encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" fill="#03050a"/><circle cx="88" cy="40" r="30" fill="#c7d2ff"/><circle cx="95" cy="36" r="25" fill="#03050a"/></svg>`);
+      const manifest={name:"Werwölfe von Düsterwald — Erzähler",short_name:"Düsterwald",start_url:".",display:"standalone",background_color:"#03050a",theme_color:"#03050a",icons:[{src:`data:image/svg+xml;charset=utf-8,${iconSvg}`,sizes:"128x128",type:"image/svg+xml"},{src:`data:image/svg+xml;charset=utf-8,${iconSvg}`,sizes:"256x256",type:"image/svg+xml"}]};
+      const manifestUrl=URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:"application/manifest+json"}));
+      const link=document.createElement("link"); link.rel="manifest"; link.href=manifestUrl; document.head.appendChild(link);
+      const ready=await navigator.serviceWorker.ready; (ready.active||reg.active)?.postMessage({type:"CACHE_URLS", payload:[location.href]});
+    }).catch(console.warn);
+  })();
+  </script>
+</body>
+</html>
